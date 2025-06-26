@@ -1,18 +1,18 @@
 pipeline {
     agent any
 
-    environment {
-        IMAGE_NAME = 'flask-todo-app'
-        CONTAINER_NAME = 'flask-todo-container'
-        APP_PORT = '5002'
-    }
-
     stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    echo "Building Docker image: ${IMAGE_NAME}"
-                    bat "docker build -t %IMAGE_NAME% ."
+                    echo 'Building Docker image: flask-todo-app'
+                    bat 'docker build -t flask-todo-app .'
                 }
             }
         }
@@ -20,25 +20,27 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
-                    echo "Stopping and removing existing container if it exists..."
-                    bat "docker rm -f %CONTAINER_NAME% || exit 0"
+                    echo 'Checking and stopping existing containers using port 5002...'
 
-                    echo "Running new Docker container on port ${APP_PORT}..."
-                    bat """
-                        docker run -d -p %APP_PORT%:%APP_PORT% ^
-                        --name %CONTAINER_NAME% %IMAGE_NAME%
-                    """
+                    // Stop and remove any containers using port 5002
+                    bat '''
+                    FOR /F "tokens=*" %%i IN ('docker ps -q --filter "publish=5002"') DO docker stop %%i
+                    FOR /F "tokens=*" %%i IN ('docker ps -a -q --filter "publish=5002"') DO docker rm %%i
+                    '''
+
+                    echo 'Starting new container on port 5003...'
+                    bat 'docker run -d -p 5003:5002 --name flask-todo-container flask-todo-app'
                 }
             }
         }
     }
 
     post {
-        success {
-            echo '✅ Pipeline completed successfully!!'
-        }
         failure {
-            echo '❌ Pipeline failed. Check logs for more details....'
+            echo '❌ Pipeline failed. Check logs for details.'
+        }
+        success {
+            echo '✅ Pipeline completed successfully!'
         }
     }
 }

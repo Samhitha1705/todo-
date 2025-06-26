@@ -1,6 +1,13 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = "flask-todo-app"
+        CONTAINER_NAME = "flask-todo-container"
+        PORT = "5002"
+        HOST_PORT = "5003" // Change this if needed
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -11,8 +18,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    echo 'Building Docker image: flask-todo-app'
-                    bat 'docker build -t flask-todo-app .'
+                    echo "Building Docker image: ${IMAGE_NAME}"
+                    bat "docker build -t ${IMAGE_NAME} ."
                 }
             }
         }
@@ -20,16 +27,12 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
-                    echo 'Checking and stopping existing containers using port 5002...'
-
-                    // Stop and remove any containers using port 5002
-                    bat '''
-                    FOR /F "tokens=*" %%i IN ('docker ps -q --filter "publish=5002"') DO docker stop %%i
-                    FOR /F "tokens=*" %%i IN ('docker ps -a -q --filter "publish=5002"') DO docker rm %%i
-                    '''
-
-                    echo 'Starting new container on port 5003...'
-                    bat 'docker run -d -p 5003:5002 --name flask-todo-container flask-todo-app'
+                    echo "Checking and stopping existing containers using port ${HOST_PORT}..."
+                    bat """
+                    FOR /F "tokens=*" %%i IN ('docker ps -q --filter "publish=${HOST_PORT}"') DO docker stop %%i
+                    FOR /F "tokens=*" %%i IN ('docker ps -a -q --filter "publish=${HOST_PORT}"') DO docker rm %%i
+                    docker run -d -p ${HOST_PORT}:${PORT} --name ${CONTAINER_NAME} ${IMAGE_NAME}
+                    """
                 }
             }
         }
@@ -37,10 +40,10 @@ pipeline {
 
     post {
         failure {
-            echo '❌ Pipeline failed. Check logs for details.'
+            echo "❌ Pipeline failed. Check logs for details."
         }
         success {
-            echo '✅ Pipeline completed successfully!'
+            echo "✅ Build and deployment successful. App is running on port ${HOST_PORT}."
         }
     }
 }

@@ -3,19 +3,16 @@ pipeline {
 
     environment {
         IMAGE_NAME = 'flask-todo-app'
+        CONTAINER_NAME = 'flask-todo-container'
+        APP_PORT = '5002'
     }
 
     stages {
-        stage('Clone Repo') {
-            steps {
-                git 'https://github.com/Samhitha1705/todo-.git'  // Update this!
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t $IMAGE_NAME .'
+                    echo "Building Docker image: ${IMAGE_NAME}"
+                    sh "docker build -t ${IMAGE_NAME} ."
                 }
             }
         }
@@ -23,12 +20,25 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
-                    sh '''
-                        docker rm -f flask-todo-container || true
-                        docker run -d -p 5002:5002 --name flask-todo-container $IMAGE_NAME
-                    '''
+                    echo "Stopping and removing existing container if it exists..."
+                    sh "docker rm -f ${CONTAINER_NAME} || true"
+
+                    echo "Running new Docker container on port ${APP_PORT}..."
+                    sh """
+                        docker run -d -p ${APP_PORT}:${APP_PORT} \\
+                        --name ${CONTAINER_NAME} ${IMAGE_NAME}
+                    """
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check logs for more details.'
         }
     }
 }

@@ -12,7 +12,7 @@ pipeline {
             steps {
                 script {
                     echo "Building Docker image: ${IMAGE_NAME}"
-                    sh "docker build -t ${IMAGE_NAME} ."
+                    bat "docker build -t %IMAGE_NAME% ."
                 }
             }
         }
@@ -21,12 +21,12 @@ pipeline {
             steps {
                 script {
                     echo "Stopping and removing existing container if it exists..."
-                    sh "docker rm -f ${CONTAINER_NAME} || true"
+                    bat "docker rm -f %CONTAINER_NAME% || exit 0"
 
                     echo "Running new Docker container on port ${APP_PORT}..."
-                    sh """
-                        docker run -d -p ${APP_PORT}:${APP_PORT} \\
-                        --name ${CONTAINER_NAME} ${IMAGE_NAME}
+                    bat """
+                        docker run -d -p %APP_PORT%:%APP_PORT% ^
+                        --name %CONTAINER_NAME% %IMAGE_NAME%
                     """
                 }
             }
@@ -35,10 +35,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline completed successfully!'
+            echo '✅ Pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed. Check logs for more details.'
+            echo '❌ Pipeline failed. Check logs for more details.'
         }
     }
 }

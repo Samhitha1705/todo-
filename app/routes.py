@@ -1,4 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    jsonify,
+)
 from . import db
 
 main = Blueprint('main', __name__)
